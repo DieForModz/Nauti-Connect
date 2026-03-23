@@ -62,11 +62,11 @@ CREATE TABLE IF NOT EXISTS anchorages (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- Wildlife sightings
+-- Sightings (wildlife, debris, derelict craft, etc.)
 CREATE TABLE IF NOT EXISTS sightings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    species_type ENUM('orca','seal','dolphin','whale','other') NOT NULL,
+    sighting_type ENUM('orca','seal','dolphin','whale','other','debris','derelict_craft') NOT NULL,
     lat DECIMAL(10,8) NOT NULL,
     lng DECIMAL(11,8) NOT NULL,
     sighting_time DATETIME NOT NULL,
@@ -75,6 +75,18 @@ CREATE TABLE IF NOT EXISTS sightings (
     verified TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Sighting notifications for nearby users
+CREATE TABLE IF NOT EXISTS sighting_notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    sighting_id INT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (sighting_id) REFERENCES sightings(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_sighting (user_id, sighting_id)
 ) ENGINE=InnoDB;
 
 -- Boat listings

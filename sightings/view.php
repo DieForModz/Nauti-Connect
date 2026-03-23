@@ -11,15 +11,16 @@ $stmt->execute();
 $s = $stmt->get_result()->fetch_assoc();
 if (!$s) redirect(SITE_URL . '/sightings/');
 
-$speciesEmoji = ['orca'=>'🐋','seal'=>'🦭','dolphin'=>'🐬','whale'=>'🐳','other'=>'🐟'];
-$pageTitle = ucfirst($s['species_type']) . ' Sighting';
+$typeEmoji = ['orca'=>'🐋','seal'=>'🦭','dolphin'=>'🐬','whale'=>'🐳','other'=>'👁️','debris'=>'🗑️','derelict_craft'=>'🚢'];
+$typeLabel = ['orca'=>'Orca','seal'=>'Seal','dolphin'=>'Dolphin','whale'=>'Whale','other'=>'Other','debris'=>'Debris','derelict_craft'=>'Derelict Craft'];
+$pageTitle = ($typeLabel[$s['sighting_type']] ?? ucfirst($s['sighting_type'])) . ' Sighting';
 include __DIR__ . '/../includes/header.php';
 ?>
 
 <main class="max-w-4xl mx-auto px-4 py-10">
     <nav class="text-sm text-gray-500 mb-6">
         <a href="<?= SITE_URL ?>/sightings/" class="hover:text-[#c9a227]">Sightings</a> /
-        <span class="text-white"><?= ucfirst($s['species_type']) ?></span>
+        <span class="text-white"><?= sanitize($typeLabel[$s['sighting_type']] ?? ucfirst($s['sighting_type'])) ?></span>
     </nav>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -39,9 +40,9 @@ include __DIR__ . '/../includes/header.php';
             <?php endif; ?>
 
             <div class="flex items-center gap-4">
-                <span class="text-6xl"><?= $speciesEmoji[$s['species_type']] ?? '🐟' ?></span>
+                <span class="text-6xl"><?= $typeEmoji[$s['sighting_type']] ?? '👁️' ?></span>
                 <div>
-                    <h1 class="text-3xl font-bold text-white capitalize"><?= sanitize($s['species_type']) ?></h1>
+                    <h1 class="text-3xl font-bold text-white"><?= sanitize($typeLabel[$s['sighting_type']] ?? ucfirst($s['sighting_type'])) ?></h1>
                     <?php if ($s['verified']): ?>
                         <span class="text-green-400 text-sm">✓ Verified Sighting</span>
                     <?php endif; ?>
@@ -69,7 +70,7 @@ include __DIR__ . '/../includes/header.php';
 
             <?php if ($s['notes']): ?>
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-300 mb-2">Observation Notes</h3>
+                    <h3 class="text-sm font-semibold text-gray-300 mb-2">Description</h3>
                     <p class="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap"><?= sanitize($s['notes']) ?></p>
                 </div>
             <?php endif; ?>
@@ -85,7 +86,7 @@ include __DIR__ . '/../includes/header.php';
 const m = L.map('sighting-map').setView([<?= (float)$s['lat'] ?>, <?= (float)$s['lng'] ?>], 10);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m);
 L.circleMarker([<?= (float)$s['lat'] ?>, <?= (float)$s['lng'] ?>], { radius: 12, color: '#f97316', fillColor: '#fb923c', fillOpacity: 0.9, weight: 2 })
-    .addTo(m).bindPopup('<?= addslashes(ucfirst($s['species_type'])) ?> sighting').openPopup();
+    .addTo(m).bindPopup('<?= addslashes($typeLabel[$s['sighting_type']] ?? ucfirst($s['sighting_type'])) ?> sighting').openPopup();
 </script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

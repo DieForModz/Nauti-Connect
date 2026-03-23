@@ -18,7 +18,7 @@ $res = $conn->query("SELECT 'anchorage' as type, a.id, a.name as title, a.create
     FROM anchorages a JOIN users u ON u.id = a.user_id ORDER BY a.created_at DESC LIMIT 5");
 while ($row = $res->fetch_assoc()) $activity[] = $row;
 
-$res = $conn->query("SELECT 'sighting' as type, s.id, CONCAT(s.species_type,' sighting') as title, s.created_at, u.username
+$res = $conn->query("SELECT 'sighting' as type, s.id, CONCAT(s.sighting_type,' sighting') as title, s.created_at, u.username
     FROM sightings s JOIN users u ON u.id = s.user_id ORDER BY s.created_at DESC LIMIT 5");
 while ($row = $res->fetch_assoc()) $activity[] = $row;
 

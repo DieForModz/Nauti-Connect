@@ -24,11 +24,11 @@ while ($row = $res->fetch_assoc()) {
 }
 
 // Sightings (last 30 days)
-$res = $conn->query("SELECT id, species_type, lat, lng, sighting_time FROM sightings WHERE sighting_time >= NOW() - INTERVAL 30 DAY ORDER BY sighting_time DESC LIMIT 200");
+$res = $conn->query("SELECT id, sighting_type, lat, lng, sighting_time FROM sightings WHERE sighting_time >= NOW() - INTERVAL 30 DAY ORDER BY sighting_time DESC LIMIT 200");
 while ($row = $res->fetch_assoc()) {
     $sightings[] = [
         'id'      => (int)$row['id'],
-        'species' => $row['species_type'],
+        'species' => $row['sighting_type'],
         'lat'     => (float)$row['lat'],
         'lng'     => (float)$row['lng'],
         'time'    => $row['sighting_time'],
