@@ -1,0 +1,9 @@
+# Log files – contain sensitive runtime error details
+logs/error.log
+logs/*.log
+
+# Uploaded user content – binary files, not source code
+uploads/
+
+# Environment / secrets
+.env
