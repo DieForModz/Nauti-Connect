@@ -33,16 +33,10 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <!-- Hero Section -->
-<section class="relative overflow-hidden py-20 px-4">
-    <div class="absolute inset-0 bg-gradient-to-b from-[#0f2340] to-[#0a1628]"></div>
-    <!-- Animated waves background -->
-    <div class="absolute bottom-0 left-0 right-0 opacity-20">
-        <svg viewBox="0 0 1440 200" fill="none" class="w-full wave-animate">
-            <path d="M0,100 C240,160 480,40 720,100 C960,160 1200,40 1440,100 L1440,200 L0,200 Z" fill="#1e3a5f"/>
-        </svg>
-    </div>
+<section id="hero-section" class="relative overflow-hidden py-20 px-4">
+    <canvas id="ocean-bg" class="ocean-canvas" aria-hidden="true"></canvas>
 
-    <div class="relative max-w-7xl mx-auto text-center">
+    <div class="relative z-10 max-w-7xl mx-auto text-center">
         <!-- Yacht SVG silhouette -->
         <div class="flex justify-center mb-8">
             <svg class="w-32 h-32 text-[#c9a227] opacity-90" viewBox="0 0 120 120" fill="currentColor" aria-label="Sailing yacht">
@@ -214,6 +208,112 @@ include __DIR__ . '/includes/header.php';
             document.getElementById('map-modal').classList.remove('hidden');
         }
     });
+</script>
+
+<!-- Ocean background animation -->
+<script>
+(function () {
+    var hero   = document.getElementById('hero-section');
+    var canvas = document.getElementById('ocean-bg');
+    if (!canvas || !hero) return;
+    var ctx      = canvas.getContext('2d');
+    var ripples  = [];
+    var frame    = 0;
+    var lastRippleMs = 0;
+    var RIPPLE_COLOR_PRIMARY = '201,162,39';   // brand gold
+    var RIPPLE_COLOR_ACCENT  = '255,215,80';   // lighter gold shimmer
+
+    function resize() {
+        var w = hero.offsetWidth;
+        var h = hero.offsetHeight;
+        if (w > 0 && h > 0) { canvas.width = w; canvas.height = h; }
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    hero.addEventListener('mousemove', function (e) {
+        var now = Date.now();
+        if (now - lastRippleMs < 60) return;   // 60 ms throttle (~16.67 ripples/s max)
+        lastRippleMs = now;
+        var rect = canvas.getBoundingClientRect();
+        ripples.push({ x: e.clientX - rect.left, y: e.clientY - rect.top, r: 0, o: 0.65 });
+        if (ripples.length > 30) ripples.shift();
+    });
+
+    function draw() {
+        var w = canvas.width;
+        var h = canvas.height;
+        if (w === 0 || h === 0) { resize(); requestAnimationFrame(draw); return; }
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Ocean gradient background
+        var bg = ctx.createLinearGradient(0, 0, 0, h);
+        bg.addColorStop(0,    '#0d1f3c');
+        bg.addColorStop(0.4,  '#112844');
+        bg.addColorStop(0.75, '#1a3a5c');
+        bg.addColorStop(1,    '#0a1628');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+
+        // Animated wave layers
+        var t = frame * 0.016;
+        var layers = [
+            { a: 30, f: 0.004, p: 0,   spd: 0.4, base: 0.82, col: 'rgba(15,45,90,0.55)' },
+            { a: 22, f: 0.006, p: 1.2, spd: 0.6, base: 0.76, col: 'rgba(20,58,105,0.45)' },
+            { a: 18, f: 0.008, p: 2.5, spd: 0.9, base: 0.70, col: 'rgba(28,70,125,0.38)' },
+            { a: 14, f: 0.010, p: 4.0, spd: 1.3, base: 0.64, col: 'rgba(35,85,145,0.30)' },
+            { a: 10, f: 0.013, p: 0.7, spd: 1.8, base: 0.58, col: 'rgba(45,100,160,0.22)' },
+            { a:  8, f: 0.015, p: 3.3, spd: 2.2, base: 0.55, col: 'rgba(201,162,39,0.07)' },  // gold shimmer
+        ];
+        layers.forEach(function (wv) {
+            var baseY = wv.base * h;
+            ctx.beginPath();
+            for (var x = 0; x <= w + 3; x += 3) {
+                var y = baseY
+                    + Math.sin(x * wv.f + t * wv.spd + wv.p) * wv.a
+                    + Math.sin(x * wv.f * 0.5 + t * wv.spd * 0.7 + wv.p + 1) * wv.a * 0.35;
+                if (x === 0) { ctx.moveTo(0, h); ctx.lineTo(0, y); }
+                else ctx.lineTo(x, y);
+            }
+            ctx.lineTo(w, h);
+            ctx.closePath();
+            ctx.fillStyle = wv.col;
+            ctx.fill();
+        });
+
+        // Mouse ripples
+        for (var i = ripples.length - 1; i >= 0; i--) {
+            var rip = ripples[i];
+            ctx.beginPath();
+            ctx.arc(rip.x, rip.y, rip.r, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(' + RIPPLE_COLOR_PRIMARY + ',' + rip.o.toFixed(3) + ')';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            if (rip.r > 12) {
+                ctx.beginPath();
+                ctx.arc(rip.x, rip.y, rip.r * 0.55, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(' + RIPPLE_COLOR_PRIMARY + ',' + (rip.o * 0.6).toFixed(3) + ')';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            if (rip.r > 24) {
+                ctx.beginPath();
+                ctx.arc(rip.x, rip.y, rip.r * 0.25, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(' + RIPPLE_COLOR_ACCENT + ',' + (rip.o * 0.35).toFixed(3) + ')';
+                ctx.lineWidth = 0.75;
+                ctx.stroke();
+            }
+            rip.r += 2.8;
+            rip.o -= 0.013;
+            if (rip.o <= 0 || rip.r > 90) ripples.splice(i, 1);
+        }
+
+        frame++;
+        requestAnimationFrame(draw);
+    }
+    draw();
+}());
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
