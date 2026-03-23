@@ -28,12 +28,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = $_SESSION['user_id'];
             $stmt = $conn->prepare('INSERT INTO build_logs (user_id, title, boat_name, description, progress_percent, cover_image) VALUES (?, ?, ?, ?, ?, ?)');
             $stmt->bind_param('isssis', $userId, $title, $boatName, $desc, $progress, $coverImg);
-            if ($stmt->execute()) {
+            try {
+                $stmt->execute();
                 addReputation($userId, 10, $conn);
                 $_SESSION['flash_success'] = 'Build log created!';
                 redirect(SITE_URL . '/builds/view.php?id=' . $conn->insert_id);
-            } else {
-                $errors[] = 'Failed to create build log.';
+            } catch (\mysqli_sql_exception $e) {
+                error_log('Failed to create build log: ' . $e->getMessage());
+                $errors[] = 'Failed to create build log. Please try again.';
             }
         }
     }

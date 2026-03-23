@@ -46,13 +46,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
                 $ins  = $conn->prepare('INSERT INTO users (username, email, password_hash, boat_type, bio) VALUES (?, ?, ?, ?, ?)');
                 $ins->bind_param('sssss', $username, $email, $hash, $boatType, $bio);
-                if ($ins->execute()) {
+                try {
+                    $ins->execute();
                     session_regenerate_id(true);
                     $_SESSION['user_id']  = $conn->insert_id;
                     $_SESSION['username'] = $username;
                     $_SESSION['flash_success'] = "Welcome aboard, $username!";
                     redirect(SITE_URL . '/');
-                } else {
+                } catch (\mysqli_sql_exception $e) {
+                    error_log('Registration failed: ' . $e->getMessage());
                     $errors[] = 'Registration failed. Please try again.';
                 }
             }

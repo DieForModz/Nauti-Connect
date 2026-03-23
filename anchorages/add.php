@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name       = trim($_POST['name'] ?? '');
         $lat        = (float)($_POST['lat'] ?? 0);
         $lng        = (float)($_POST['lng'] ?? 0);
-        $depth      = $_POST['depth'] !== '' ? (float)$_POST['depth'] : null;
+        $depth      = ($_POST['depth'] ?? '') !== '' ? (float)$_POST['depth'] : null;
         $holding    = $_POST['holding_quality'] ?? '';
         $protection = (int)($_POST['protection_rating'] ?? 0);
         $review     = trim($_POST['review_text'] ?? '');
@@ -32,14 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId    = $_SESSION['user_id'];
             $depthVal  = is_null($depth) ? null : (float)$depth;
             $protVal   = is_null($protection) ? null : (int)$protection;
+            // Convert empty string to null so MySQL ENUM accepts it in strict mode
+            $holdingVal = $holding !== '' ? $holding : null;
             $stmt = $conn->prepare('INSERT INTO anchorages (user_id, name, lat, lng, depth, holding_quality, protection_rating, review_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-            $stmt->bind_param('isdddsis', $userId, $name, $lat, $lng, $depthVal, $holding, $protVal, $review);
-            if ($stmt->execute()) {
+            $stmt->bind_param('isdddsis', $userId, $name, $lat, $lng, $depthVal, $holdingVal, $protVal, $review);
+            try {
+                $stmt->execute();
                 addReputation($userId, 10, $conn);
                 $_SESSION['flash_success'] = 'Anchorage added!';
                 redirect(SITE_URL . '/anchorages/view.php?id=' . $conn->insert_id);
-            } else {
-                $errors[] = 'Failed to save.';
+            } catch (\mysqli_sql_exception $e) {
+                error_log('Failed to save anchorage: ' . $e->getMessage());
+                $errors[] = 'Failed to save. Please try again.';
             }
         }
     }

@@ -46,19 +46,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Parse GPX for coordinates
                         if ($ext === 'gpx') {
                             try {
-                                $xml = simplexml_load_file($dir . $filename);
-                                $coords = [];
-                                foreach ($xml->wpt ?? [] as $wpt) {
-                                    $coords[] = ['lat' => (float)$wpt['lat'], 'lng' => (float)$wpt['lon'], 'name' => (string)($wpt->name ?? '')];
-                                }
-                                foreach ($xml->trk ?? [] as $trk) {
-                                    foreach ($trk->trkseg ?? [] as $seg) {
-                                        foreach ($seg->trkpt ?? [] as $pt) {
-                                            $coords[] = ['lat' => (float)$pt['lat'], 'lng' => (float)$pt['lon']];
+                                // LIBXML_NONET prevents network access to guard against XXE.
+                                // PHP 8.0+ (libxml2 2.9+) already disables external entities
+                                // by default, so libxml_disable_entity_loader() is not needed.
+                                $xml = simplexml_load_file(
+                                    $dir . $filename,
+                                    'SimpleXMLElement',
+                                    LIBXML_NONET
+                                );
+                                if ($xml !== false) {
+                                    $coords = [];
+                                    foreach ($xml->wpt ?? [] as $wpt) {
+                                        $coords[] = ['lat' => (float)$wpt['lat'], 'lng' => (float)$wpt['lon'], 'name' => (string)($wpt->name ?? '')];
+                                    }
+                                    foreach ($xml->trk ?? [] as $trk) {
+                                        foreach ($trk->trkseg ?? [] as $seg) {
+                                            foreach ($seg->trkpt ?? [] as $pt) {
+                                                $coords[] = ['lat' => (float)$pt['lat'], 'lng' => (float)$pt['lon']];
+                                            }
                                         }
                                     }
+                                    $coordsJson = json_encode(array_slice($coords, 0, 500));
                                 }
-                                $coordsJson = json_encode(array_slice($coords, 0, 500));
                             } catch (Exception $e) {
                                 // Ignore parse errors
                             }
@@ -74,12 +83,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = $_SESSION['user_id'];
             $stmt = $conn->prepare('INSERT INTO chart_shares (user_id, region_name, chart_file, coordinates_json, description) VALUES (?, ?, ?, ?, ?)');
             $stmt->bind_param('issss', $userId, $regionName, $chartFile, $coordsJson, $description);
-            if ($stmt->execute()) {
+            try {
+                $stmt->execute();
                 addReputation($userId, 10, $conn);
                 $_SESSION['flash_success'] = 'Chart shared successfully!';
                 redirect(SITE_URL . '/charts/view.php?id=' . $conn->insert_id);
-            } else {
-                $errors[] = 'Failed to save chart.';
+            } catch (\mysqli_sql_exception $e) {
+                error_log('Failed to save chart: ' . $e->getMessage());
+                $errors[] = 'Failed to save chart. Please try again.';
             }
         }
     }

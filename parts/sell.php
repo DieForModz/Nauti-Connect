@@ -45,12 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId     = $_SESSION['user_id'];
             $stmt = $conn->prepare('INSERT INTO parts_listings (seller_id, title, description, price, `condition`, category, images_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
             $stmt->bind_param('issdssss', $userId, $title, $description, $price, $condition, $category, $imagesJson, $status);
-            if ($stmt->execute()) {
+            try {
+                $stmt->execute();
                 addReputation($userId, 5, $conn);
                 $_SESSION['flash_success'] = 'Listing created successfully!';
                 redirect(SITE_URL . '/parts/view.php?id=' . $conn->insert_id);
-            } else {
-                $errors[] = 'Failed to create listing.';
+            } catch (\mysqli_sql_exception $e) {
+                error_log('Failed to create parts listing: ' . $e->getMessage());
+                $errors[] = 'Failed to create listing. Please try again.';
             }
         }
     }
