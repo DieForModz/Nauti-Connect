@@ -1,3 +1,8 @@
-# Deny all public access to log files
-Order Allow,Deny
-Deny from all
+# Deny all web access to the logs directory
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order Allow,Deny
+    Deny from all
+</IfModule>

@@ -1,9 +1,30 @@
 <?php
+// ── PHP version requirement ───────────────────────────────────────────────────
+// This application requires PHP 8.0 or higher (uses match expressions, union
+// return types, and other PHP 8.0+ language features).
+if (PHP_VERSION_ID < 80000) {
+    http_response_code(500);
+    die('Nauti-Connect requires PHP 8.0 or later. Currently running PHP ' . PHP_VERSION . '. '
+        . 'In MAMP, go to MAMP > Preferences > PHP and select PHP 8.0 or higher.');
+}
+
+// ── Database configuration ────────────────────────────────────────────────────
+// MAMP users: use '127.0.0.1' instead of 'localhost' to force a TCP connection
+// and avoid Unix-socket path mismatches (MAMP's socket is at a non-standard path).
+// MAMP default MySQL port is 8889; if you changed it, set DB_HOST to '127.0.0.1:8889'.
 define('DB_HOST', 'localhost');
 define('DB_USER', 'your_username');
 define('DB_PASS', 'your_password');
 define('DB_NAME', 'maritime_db');
+
+// ── Site URL ──────────────────────────────────────────────────────────────────
+// Set this to the root URL of your installation (no trailing slash).
+// MAMP examples (HTTP – HTTPS requires additional SSL configuration in MAMP):
+//   http://localhost:8888/Nauti-Connect   (MAMP default port)
+//   http://localhost/Nauti-Connect        (MAMP with port 80)
+//   http://nauti-connect.test             (if using a virtual host)
 define('SITE_URL', 'https://yourdomain.com');
+
 define('UPLOAD_PATH', __DIR__ . '/uploads/');
 define('UPLOAD_URL', SITE_URL . '/uploads/');
 define('MAX_FILE_SIZE', 10 * 1024 * 1024); // 10MB
