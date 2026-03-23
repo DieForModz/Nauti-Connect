@@ -18,12 +18,23 @@ define('DB_PASS', 'your_password');
 define('DB_NAME', 'maritime_db');
 
 // ── Site URL ──────────────────────────────────────────────────────────────────
-// Set this to the root URL of your installation (no trailing slash).
-// MAMP examples (HTTP – HTTPS requires additional SSL configuration in MAMP):
-//   http://localhost:8888/Nauti-Connect   (MAMP default port)
-//   http://localhost/Nauti-Connect        (MAMP with port 80)
-//   http://nauti-connect.test             (if using a virtual host)
-define('SITE_URL', 'https://yourdomain.com');
+// Auto-detected from the current request (handles both root and subdirectory
+// installs, HTTP and HTTPS, and custom ports).
+// To override, uncomment the line below and set your domain (no trailing slash):
+// define('SITE_URL', 'https://yourdomain.com');
+if (!defined('SITE_URL')) {
+    $__protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $__host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $__docRoot  = rtrim(str_replace('\\', '/', (string)(realpath($_SERVER['DOCUMENT_ROOT'] ?? '') ?: '')), '/');
+    $__appRoot  = rtrim(str_replace('\\', '/', (string)(realpath(__DIR__) ?: __DIR__)), '/');
+    if ($__docRoot !== '' && str_starts_with($__appRoot, $__docRoot)) {
+        $__subPath = substr($__appRoot, strlen($__docRoot));
+    } else {
+        $__subPath = '';
+    }
+    define('SITE_URL', $__protocol . '://' . $__host . $__subPath);
+    unset($__protocol, $__host, $__docRoot, $__appRoot, $__subPath);
+}
 
 define('UPLOAD_PATH', __DIR__ . '/uploads/');
 define('UPLOAD_URL', SITE_URL . '/uploads/');
