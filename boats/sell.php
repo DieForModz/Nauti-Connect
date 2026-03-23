@@ -55,12 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $stmt = $conn->prepare('INSERT INTO boat_listings (seller_id, title, type, length, year, price, description, specs_json, images_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
             $stmt->bind_param('issdidsss', $userId, $title, $type, $length, $yearVal, $price, $desc, $specsJson, $imagesJson);
-            if ($stmt->execute()) {
+            try {
+                $stmt->execute();
                 addReputation($userId, 10, $conn);
                 $_SESSION['flash_success'] = 'Boat listed successfully!';
                 redirect(SITE_URL . '/boats/view.php?id=' . $conn->insert_id);
-            } else {
-                $errors[] = 'Failed to create listing.';
+            } catch (\mysqli_sql_exception $e) {
+                error_log('Failed to create boat listing: ' . $e->getMessage());
+                $errors[] = 'Failed to create listing. Please try again.';
             }
         }
     }

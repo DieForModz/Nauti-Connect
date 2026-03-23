@@ -33,13 +33,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // If no lat/lng provided, try EXIF
                 if ($lat == 0 && $lng == 0) {
                     $exif = @exif_read_data(UPLOAD_PATH . $saved, 'GPS');
-                    if (!empty($exif['GPS']['GPSLatitude'])) {
+                    if (!empty($exif['GPS']['GPSLatitude']) && !empty($exif['GPS']['GPSLongitude'])) {
                         $latDeg  = $exif['GPS']['GPSLatitude'];
                         $lngDeg  = $exif['GPS']['GPSLongitude'];
                         $latRef  = $exif['GPS']['GPSLatitudeRef'] ?? 'N';
                         $lngRef  = $exif['GPS']['GPSLongitudeRef'] ?? 'E';
-                        $lat     = (dms2dec($latDeg)) * ($latRef === 'S' ? -1 : 1);
-                        $lng     = (dms2dec($lngDeg)) * ($lngRef === 'W' ? -1 : 1);
+                        $latDec  = dms2dec($latDeg);
+                        $lngDec  = dms2dec($lngDeg);
+                        if ($latDec !== null && $lngDec !== null) {
+                            $lat = $latDec * ($latRef === 'S' ? -1 : 1);
+                            $lng = $lngDec * ($lngRef === 'W' ? -1 : 1);
+                        }
                     }
                 }
             } else {
@@ -51,23 +55,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = $_SESSION['user_id'];
             $stmt = $conn->prepare('INSERT INTO sightings (user_id, species_type, lat, lng, sighting_time, notes, image) VALUES (?, ?, ?, ?, ?, ?, ?)');
             $stmt->bind_param('isddsss', $userId, $species, $lat, $lng, $time, $notes, $imgPath);
-            if ($stmt->execute()) {
+            try {
+                $stmt->execute();
                 addReputation($userId, 5, $conn);
                 $_SESSION['flash_success'] = 'Sighting reported! Thank you for contributing.';
                 redirect(SITE_URL . '/sightings/view.php?id=' . $conn->insert_id);
-            } else {
-                $errors[] = 'Failed to save sighting.';
+            } catch (\mysqli_sql_exception $e) {
+                error_log('Failed to save sighting: ' . $e->getMessage());
+                $errors[] = 'Failed to save sighting. Please try again.';
             }
         }
     }
 }
 
-function dms2dec(array $dms): float {
-    [$d, $m, $s] = $dms;
-    [$dn, $dd] = explode('/', $d);
-    [$mn, $md] = explode('/', $m);
-    [$sn, $sd] = explode('/', $s);
-    return ((int)$dn / (int)$dd) + ((int)$mn / (int)$md / 60) + ((int)$sn / (int)$sd / 3600);
+function dms2dec(array $dms): ?float {
+    $d = $dms[0] ?? null;
+    $m = $dms[1] ?? null;
+    $s = $dms[2] ?? null;
+    if ($d === null || $m === null || $s === null) return null;
+    $dParts = explode('/', (string)$d);
+    $mParts = explode('/', (string)$m);
+    $sParts = explode('/', (string)$s);
+    $dn = (int)($dParts[0] ?? 0);
+    $dd = (int)($dParts[1] ?? 1);
+    $mn = (int)($mParts[0] ?? 0);
+    $md = (int)($mParts[1] ?? 1);
+    $sn = (int)($sParts[0] ?? 0);
+    $sd = (int)($sParts[1] ?? 1);
+    if ($dd === 0 || $md === 0 || $sd === 0) return null;
+    return ($dn / $dd) + ($mn / $md / 60) + ($sn / $sd / 3600);
 }
 
 $speciesEmoji = ['orca'=>'🐋','seal'=>'🦭','dolphin'=>'🐬','whale'=>'🐳','other'=>'🐟'];

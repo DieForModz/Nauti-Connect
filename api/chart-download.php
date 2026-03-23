@@ -21,7 +21,8 @@ $filePath = UPLOAD_PATH . $chart['chart_file'];
 if (!file_exists($filePath)) { http_response_code(404); exit; }
 
 $filename = basename($chart['chart_file']);
-$mime = mime_content_type($filePath) ?: 'application/octet-stream';
+$finfo    = new finfo(FILEINFO_MIME_TYPE);
+$mime     = $finfo->file($filePath) ?: 'application/octet-stream';
 
 header('Content-Type: ' . $mime);
 header('Content-Disposition: attachment; filename="' . $filename . '"');
