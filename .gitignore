@@ -3,7 +3,9 @@ logs/error.log
 logs/*.log
 
 # Uploaded user content – binary files, not source code
-uploads/
+# Track .htaccess (security) but ignore all uploaded files and subdirectories
+uploads/*
+!uploads/.htaccess
 
 # Environment / secrets
 .env

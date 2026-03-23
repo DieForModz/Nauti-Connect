@@ -7,19 +7,6 @@ ServerSignature Off
 ErrorDocument 500 /500.php
 ErrorDocument 503 /500.php
 
-# Deny public access to the logs directory
-<IfModule mod_authz_core.c>
-    <Directory "logs">
-        Require all denied
-    </Directory>
-</IfModule>
-<IfModule !mod_authz_core.c>
-    <Directory "logs">
-        Order Allow,Deny
-        Deny from all
-    </Directory>
-</IfModule>
-
 # Clean URLs
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -40,15 +27,7 @@ RewriteCond %{REQUEST_FILENAME} !-d
     Deny from all
 </FilesMatch>
 
-# Prevent PHP execution in uploads directory
-<Directory "uploads">
-    <FilesMatch "\.php$">
-        Order Allow,Deny
-        Deny from all
-    </FilesMatch>
-    Options -ExecCGI
-    AddHandler cgi-script .php .pl .py .jsp .asp .sh .cgi
-</Directory>
+# Prevent PHP execution in uploads directory (enforced via uploads/.htaccess)
 
 # Block access to hidden files
 <FilesMatch "^\.">
