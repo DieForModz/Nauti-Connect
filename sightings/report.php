@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($errors)) {
             $userId = $_SESSION['user_id'];
             $stmt = $conn->prepare('INSERT INTO sightings (user_id, species_type, lat, lng, sighting_time, notes, image) VALUES (?, ?, ?, ?, ?, ?, ?)');
-            $stmt->bind_param('isddssss', $userId, $species, $lat, $lng, $time, $notes, $imgPath);
+            $stmt->bind_param('isddsss', $userId, $species, $lat, $lng, $time, $notes, $imgPath);
             if ($stmt->execute()) {
                 addReputation($userId, 5, $conn);
                 $_SESSION['flash_success'] = 'Sighting reported! Thank you for contributing.';
