@@ -86,7 +86,8 @@ function addAnchorageMarkers(anchorages, clusterGroup) {
 }
 
 function addSightingMarkers(sightings, clusterGroup) {
-    const emojis = { orca: '🐋', seal: '🦭', dolphin: '🐬', whale: '🐳', other: '🐟' };
+    const emojis = { orca: '🐋', seal: '🦭', dolphin: '🐬', whale: '🐳', other: '👁️', debris: '🗑️', derelict_craft: '🚢' };
+    const labels = { orca: 'Orca', seal: 'Seal', dolphin: 'Dolphin', whale: 'Whale', other: 'Other', debris: 'Debris', derelict_craft: 'Derelict Craft' };
     sightings.forEach(s => {
         const color  = s.recent ? '#c9a227' : '#f97316';
         const radius = s.recent ? 10 : 7;
@@ -97,9 +98,10 @@ function addSightingMarkers(sightings, clusterGroup) {
             fillOpacity: 0.85,
             weight: 2,
         });
-        const emoji = emojis[s.species] || '🐟';
+        const emoji = emojis[s.species] || '👁️';
+        const label = labels[s.species] || capitalize(s.species);
         marker.bindPopup(
-            `${emoji} <b>${capitalize(s.species)}</b><br>
+            `${emoji} <b>${label}</b><br>
              ${s.recent ? '<span style="color:#c9a227">🔴 Last 24h</span><br>' : ''}
              ${s.time}<br>
              <a href="${s.url}">View Sighting →</a>`

@@ -2,10 +2,10 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/db.php';
 
-$pageTitle = 'Wildlife Sightings';
+$pageTitle = 'Sightings';
 
 $species  = $_GET['species'] ?? '';
-$validSp  = ['orca','seal','dolphin','whale','other'];
+$validSp  = ['orca','seal','dolphin','whale','other','debris','derelict_craft'];
 $page     = max(1, (int)($_GET['page'] ?? 1));
 $perPage  = 20;
 $offset   = ($page - 1) * $perPage;
@@ -15,7 +15,7 @@ $params = [];
 $types  = '';
 
 if ($species !== '' && in_array($species, $validSp, true)) {
-    $where[]  = 's.species_type = ?';
+    $where[]  = 's.sighting_type = ?';
     $params[]  = $species;
     $types    .= 's';
 }
@@ -41,10 +41,11 @@ $sightings  = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $totalPages = (int)ceil($total / $perPage);
 
 // Recent sightings for map (last 200)
-$mapStmt = $conn->query("SELECT id, species_type, lat, lng, sighting_time, notes FROM sightings ORDER BY sighting_time DESC LIMIT 200");
+$mapStmt = $conn->query("SELECT id, sighting_type, lat, lng, sighting_time, notes FROM sightings ORDER BY sighting_time DESC LIMIT 200");
 $mapData = $mapStmt->fetch_all(MYSQLI_ASSOC);
 
-$speciesEmoji = ['orca'=>'🐋','seal'=>'🦭','dolphin'=>'🐬','whale'=>'🐳','other'=>'🐟'];
+$typeEmoji = ['orca'=>'🐋','seal'=>'🦭','dolphin'=>'🐬','whale'=>'🐳','other'=>'👁️','debris'=>'🗑️','derelict_craft'=>'🚢'];
+$typeLabel = ['orca'=>'Orca','seal'=>'Seal','dolphin'=>'Dolphin','whale'=>'Whale','other'=>'Other','debris'=>'Debris','derelict_craft'=>'Derelict Craft'];
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -52,7 +53,7 @@ include __DIR__ . '/../includes/header.php';
 <main class="max-w-7xl mx-auto px-4 py-10">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-            <h1 class="text-3xl font-bold text-white">Wildlife Sightings</h1>
+            <h1 class="text-3xl font-bold text-white">Sightings</h1>
             <p class="text-gray-400 mt-1"><?= number_format($total) ?> sightings recorded</p>
         </div>
         <?php if (isLoggedIn()): ?>
@@ -60,12 +61,12 @@ include __DIR__ . '/../includes/header.php';
         <?php endif; ?>
     </div>
 
-    <!-- Species filter tabs -->
+    <!-- Sighting type filter tabs -->
     <div class="flex gap-2 flex-wrap mb-6">
-        <a href="?" class="filter-btn <?= !$species ? 'active' : '' ?>">All Species</a>
+        <a href="?" class="filter-btn <?= !$species ? 'active' : '' ?>">All Types</a>
         <?php foreach ($validSp as $sp): ?>
             <a href="?species=<?= $sp ?>" class="filter-btn <?= $species === $sp ? 'active' : '' ?>">
-                <?= $speciesEmoji[$sp] ?> <?= ucfirst($sp) ?>
+                <?= $typeEmoji[$sp] ?> <?= $typeLabel[$sp] ?>
             </a>
         <?php endforeach; ?>
     </div>
@@ -91,9 +92,9 @@ include __DIR__ . '/../includes/header.php';
                     <?php endif; ?>
 
                     <div class="flex items-start gap-3">
-                        <span class="text-4xl"><?= $speciesEmoji[$s['species_type']] ?? '🐟' ?></span>
+                        <span class="text-4xl"><?= $typeEmoji[$s['sighting_type']] ?? '👁️' ?></span>
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-bold text-white capitalize"><?= sanitize($s['species_type']) ?></h3>
+                            <h3 class="font-bold text-white"><?= sanitize($typeLabel[$s['sighting_type']] ?? ucfirst($s['sighting_type'])) ?></h3>
                             <p class="text-gray-400 text-xs">by <?= sanitize($s['username']) ?></p>
                             <p class="text-gray-500 text-xs mt-1"><?= date('M j, Y g:ia', strtotime($s['sighting_time'])) ?></p>
                         </div>
@@ -129,7 +130,7 @@ include __DIR__ . '/../includes/header.php';
 <script>
 const sightingMapData = <?= json_encode(array_map(fn($s) => [
     'id'      => $s['id'],
-    'species' => $s['species_type'],
+    'species' => $s['sighting_type'],
     'lat'     => (float)$s['lat'],
     'lng'     => (float)$s['lng'],
     'time'    => $s['sighting_time'],
@@ -137,15 +138,18 @@ const sightingMapData = <?= json_encode(array_map(fn($s) => [
     'recent'  => strtotime($s['sighting_time']) > time() - 86400,
 ], $mapData)) ?>;
 
-const emojis = { orca:'🐋', seal:'🦭', dolphin:'🐬', whale:'🐳', other:'🐟' };
+const emojis = { orca:'🐋', seal:'🦭', dolphin:'🐬', whale:'🐳', other:'👁️', debris:'🗑️', derelict_craft:'🚢' };
 const sMap = L.map('sightings-map').setView([20, 0], 2);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(sMap);
+
+const typeLabels = { orca:'Orca', seal:'Seal', dolphin:'Dolphin', whale:'Whale', other:'Other', debris:'Debris', derelict_craft:'Derelict Craft' };
 
 const sMarkers = L.markerClusterGroup();
 sightingMapData.forEach(s => {
     const color = s.recent ? '#c9a227' : '#f97316';
     const marker = L.circleMarker([s.lat, s.lng], { radius: s.recent ? 10 : 7, color, fillColor: color, fillOpacity: 0.8, weight: 2 });
-    marker.bindPopup(`${emojis[s.species] || '🐟'} <b>${s.species}</b><br>${s.time}<br>${s.notes ? s.notes + '<br>' : ''}<a href="<?= SITE_URL ?>/sightings/view.php?id=${s.id}" style="color:#c9a227">View →</a>`);
+    const label = typeLabels[s.species] || s.species;
+    marker.bindPopup(`${emojis[s.species] || '👁️'} <b>${label}</b><br>${s.time}<br>${s.notes ? s.notes + '<br>' : ''}<a href="<?= SITE_URL ?>/sightings/view.php?id=${s.id}" style="color:#c9a227">View →</a>`);
     sMarkers.addLayer(marker);
 });
 sMap.addLayer(sMarkers);

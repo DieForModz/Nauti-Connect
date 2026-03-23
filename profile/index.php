@@ -121,7 +121,7 @@ include __DIR__ . '/../includes/header.php';
                             default      => SITE_URL . '/parts/view.php?id=' . $item['id'],
                         };
                         $title = match ($tab) {
-                            'sightings'  => ucfirst($item['species_type']) . ' sighting',
+                            'sightings'  => ucfirst($item['sighting_type']) . ' sighting',
                             'anchorages' => $item['name'],
                             'builds'     => $item['title'],
                             default      => $item['title'],

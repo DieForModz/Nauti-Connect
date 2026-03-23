@@ -62,11 +62,11 @@ CREATE TABLE IF NOT EXISTS anchorages (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- Wildlife sightings
+-- Sightings (wildlife, debris, derelict craft, etc.)
 CREATE TABLE IF NOT EXISTS sightings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    species_type ENUM('orca','seal','dolphin','whale','other') NOT NULL,
+    sighting_type ENUM('orca','seal','dolphin','whale','other','debris','derelict_craft') NOT NULL,
     lat DECIMAL(10,8) NOT NULL,
     lng DECIMAL(11,8) NOT NULL,
     sighting_time DATETIME NOT NULL,
