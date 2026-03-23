@@ -6,6 +6,86 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// ── Global error & exception handlers ────────────────────────────────────────
+
+/**
+ * Determine whether the current request expects a JSON response
+ * (i.e. an API endpoint under /api/).
+ */
+function isApiRequest(): bool {
+    return strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false;
+}
+
+/**
+ * Convert PHP errors into ErrorExceptions so they are caught by the
+ * exception handler and written to the log file.
+ */
+set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline): bool {
+    if (!(error_reporting() & $errno)) {
+        return false; // respect the current error_reporting level
+    }
+    throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+});
+
+/**
+ * Catch any uncaught exception, log it, then return a friendly error response.
+ */
+set_exception_handler(function (\Throwable $e): void {
+    error_log(sprintf(
+        'Uncaught %s: %s in %s on line %d%sStack trace:%s%s',
+        get_class($e),
+        $e->getMessage(),
+        $e->getFile(),
+        $e->getLine(),
+        PHP_EOL,
+        PHP_EOL,
+        $e->getTraceAsString()
+    ));
+
+    if (!headers_sent()) {
+        http_response_code(500);
+    }
+
+    if (isApiRequest()) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+        }
+        echo json_encode(['error' => 'An unexpected error occurred. Please try again later.']);
+    } else {
+        include __DIR__ . '/../500.php';
+    }
+    exit;
+});
+
+/**
+ * Catch fatal errors (E_ERROR, E_PARSE, etc.) that cannot be thrown as
+ * exceptions and write them to the log file.
+ */
+register_shutdown_function(function (): void {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log(sprintf(
+            'Fatal error: %s in %s on line %d',
+            $error['message'],
+            $error['file'],
+            $error['line']
+        ));
+
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+
+        if (isApiRequest()) {
+            if (!headers_sent()) {
+                header('Content-Type: application/json');
+            }
+            echo json_encode(['error' => 'An unexpected error occurred. Please try again later.']);
+        } else {
+            include __DIR__ . '/../500.php';
+        }
+    }
+});
+
 function sanitize(string $input): string {
     return htmlspecialchars(trim($input), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }

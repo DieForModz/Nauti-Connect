@@ -3,6 +3,23 @@
 Options -Indexes
 ServerSignature Off
 
+# Custom error pages
+ErrorDocument 500 /500.php
+ErrorDocument 503 /500.php
+
+# Deny public access to the logs directory
+<IfModule mod_authz_core.c>
+    <Directory "logs">
+        Require all denied
+    </Directory>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    <Directory "logs">
+        Order Allow,Deny
+        Deny from all
+    </Directory>
+</IfModule>
+
 # Clean URLs
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
