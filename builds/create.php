@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($errors)) {
             $userId = $_SESSION['user_id'];
             $stmt = $conn->prepare('INSERT INTO build_logs (user_id, title, boat_name, description, progress_percent, cover_image) VALUES (?, ?, ?, ?, ?, ?)');
-            $stmt->bind_param('isssss', $userId, $title, $boatName, $desc, $progress, $coverImg);
+            $stmt->bind_param('isssis', $userId, $title, $boatName, $desc, $progress, $coverImg);
             if ($stmt->execute()) {
                 addReputation($userId, 10, $conn);
                 $_SESSION['flash_success'] = 'Build log created!';

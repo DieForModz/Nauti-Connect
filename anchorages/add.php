@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $depthVal  = is_null($depth) ? null : (float)$depth;
             $protVal   = is_null($protection) ? null : (int)$protection;
             $stmt = $conn->prepare('INSERT INTO anchorages (user_id, name, lat, lng, depth, holding_quality, protection_rating, review_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-            $stmt->bind_param('isdddsds', $userId, $name, $lat, $lng, $depthVal, $holding, $protVal, $review);
+            $stmt->bind_param('isdddsis', $userId, $name, $lat, $lng, $depthVal, $holding, $protVal, $review);
             if ($stmt->execute()) {
                 addReputation($userId, 10, $conn);
                 $_SESSION['flash_success'] = 'Anchorage added!';
