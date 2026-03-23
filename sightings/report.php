@@ -58,9 +58,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param('isddsss', $userId, $species, $lat, $lng, $time, $notes, $imgPath);
             try {
                 $stmt->execute();
+                $newSightingId = $conn->insert_id; // capture before any further queries
                 addReputation($userId, 5, $conn);
+
+                // Notify users within ~50 km (≈ 0.45° bounding box) who have a location set
+                // NOTIFICATION_RADIUS_DEGREES: 0.45° ≈ 50 km
+                $notifRadius = 0.45;
+                $latMin = $lat - $notifRadius;
+                $latMax = $lat + $notifRadius;
+                $lngMin = $lng - $notifRadius;
+                $lngMax = $lng + $notifRadius;
+                $nrStmt = $conn->prepare(
+                    'SELECT id FROM users WHERE id != ? AND location_lat IS NOT NULL AND location_lng IS NOT NULL
+                     AND location_lat BETWEEN ? AND ? AND location_lng BETWEEN ? AND ?'
+                );
+                $nrStmt->bind_param('idddd', $userId, $latMin, $latMax, $lngMin, $lngMax);
+                $nrStmt->execute();
+                $nearbyUsers = $nrStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+                if ($nearbyUsers) {
+                    $insNot = $conn->prepare('INSERT IGNORE INTO sighting_notifications (user_id, sighting_id) VALUES (?, ?)');
+                    foreach ($nearbyUsers as $nu) {
+                        $insNot->bind_param('ii', $nu['id'], $newSightingId);
+                        $insNot->execute();
+                    }
+                }
+
                 $_SESSION['flash_success'] = 'Sighting reported! Thank you for contributing.';
-                redirect(SITE_URL . '/sightings/view.php?id=' . $conn->insert_id);
+                redirect(SITE_URL . '/sightings/view.php?id=' . $newSightingId);
             } catch (\mysqli_sql_exception $e) {
                 error_log('Failed to save sighting: ' . $e->getMessage());
                 $errors[] = 'Failed to save sighting. Please try again.';

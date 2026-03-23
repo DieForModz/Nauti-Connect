@@ -7,11 +7,17 @@ $csrf = generateCSRF();
 
 // Count unread messages for nav badge
 $unreadCount = 0;
+$unreadNotifs = 0;
 if ($user) {
     $stmt = $conn->prepare('SELECT COUNT(*) as cnt FROM messages WHERE receiver_id = ? AND read_status = 0');
     $stmt->bind_param('i', $user['id']);
     $stmt->execute();
     $unreadCount = (int)($stmt->get_result()->fetch_assoc()['cnt'] ?? 0);
+
+    $nStmt = $conn->prepare('SELECT COUNT(*) as cnt FROM sighting_notifications WHERE user_id = ? AND is_read = 0');
+    $nStmt->bind_param('i', $user['id']);
+    $nStmt->execute();
+    $unreadNotifs = (int)($nStmt->get_result()->fetch_assoc()['cnt'] ?? 0);
 }
 
 $currentPage = basename($_SERVER['PHP_SELF']);
@@ -75,6 +81,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <!-- Right side -->
             <div class="hidden md:flex items-center gap-3">
                 <?php if ($user): ?>
+                    <a href="<?= SITE_URL ?>/notifications/" class="relative nav-link" title="Sighting Alerts">
+                        <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        <?php if ($unreadNotifs > 0): ?>
+                            <span class="absolute -top-1 -right-1 bg-[#c9a227] text-[#0a1628] text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold"><?= $unreadNotifs > 9 ? '9+' : $unreadNotifs ?></span>
+                        <?php endif; ?>
+                    </a>
                     <a href="<?= SITE_URL ?>/messages/" class="relative nav-link">
                         <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
                         <?php if ($unreadCount > 0): ?>
@@ -122,6 +134,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <a href="<?= SITE_URL ?>/builds/" class="mobile-nav-link">Build Logs</a>
             <a href="<?= SITE_URL ?>/maintenance/" class="mobile-nav-link">Maintenance Guides</a>
             <?php if ($user): ?>
+                <a href="<?= SITE_URL ?>/notifications/" class="mobile-nav-link">🔔 Sighting Alerts <?= $unreadNotifs > 0 ? "($unreadNotifs)" : '' ?></a>
                 <a href="<?= SITE_URL ?>/messages/" class="mobile-nav-link">Messages <?= $unreadCount > 0 ? "($unreadCount)" : '' ?></a>
                 <a href="<?= SITE_URL ?>/profile/" class="mobile-nav-link">Profile</a>
                 <a href="<?= SITE_URL ?>/auth/logout.php" class="mobile-nav-link text-red-400">Logout</a>

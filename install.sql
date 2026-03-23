@@ -77,6 +77,18 @@ CREATE TABLE IF NOT EXISTS sightings (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- Sighting notifications for nearby users
+CREATE TABLE IF NOT EXISTS sighting_notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    sighting_id INT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (sighting_id) REFERENCES sightings(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_sighting (user_id, sighting_id)
+) ENGINE=InnoDB;
+
 -- Boat listings
 CREATE TABLE IF NOT EXISTS boat_listings (
     id INT AUTO_INCREMENT PRIMARY KEY,
