@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS parts_listings (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     price DECIMAL(10,2),
-    condition ENUM('new','like_new','good','fair','poor') NOT NULL,
+    `condition` ENUM('new','like_new','good','fair','poor') NOT NULL,
     category VARCHAR(100),
     images_json JSON,
     status ENUM('active','sold','wanted') DEFAULT 'active',
