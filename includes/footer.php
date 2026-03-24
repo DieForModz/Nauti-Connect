@@ -1,11 +1,11 @@
 <!-- Wave divider -->
 <div class="wave-container">
     <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#0a1628"/>
+        <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="rgba(4,14,36,0.88)"/>
     </svg>
 </div>
 
-<footer class="bg-[#0a1628] border-t border-[#c9a227]/20 pt-12 pb-6">
+<footer style="background:rgba(4,14,36,0.90);" class="border-t border-[#c9a227]/20 pt-12 pb-6">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
             <!-- Brand -->
@@ -63,6 +63,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="<?= SITE_URL ?>/assets/js/ocean.js"></script>
 <script src="<?= SITE_URL ?>/assets/js/app.js"></script>
 </body>
 </html>

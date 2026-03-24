@@ -51,7 +51,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
     </script>
 </head>
-<body class="bg-[#0a1628] text-white min-h-screen">
+<body class="text-white min-h-screen">
+
+<!-- Full-page ocean canvas — sits behind all page content -->
+<canvas id="nc-ocean-bg" aria-hidden="true"></canvas>
 
 <!-- Navigation -->
 <nav class="bg-[#0a1628]/95 backdrop-blur border-b border-[#c9a227]/20 sticky top-0 z-50">
