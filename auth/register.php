@@ -2,7 +2,17 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/db.php';
 
-if (isLoggedIn()) redirect(SITE_URL . '/');
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+    && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+if (isLoggedIn()) {
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'redirect' => SITE_URL . '/']);
+        exit;
+    }
+    redirect(SITE_URL . '/');
+}
 
 $errors = [];
 $boatTypes = ['Sailboat', 'Motorboat', 'Catamaran', 'Trimaran', 'Trawler', 'Center Console', 'Kayak/Canoe', 'Inflatable/RIB', 'Houseboat', 'Other'];
@@ -52,6 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id']  = $conn->insert_id;
                     $_SESSION['username'] = $username;
                     $_SESSION['flash_success'] = "Welcome aboard, $username!";
+                    if ($isAjax) {
+                        header('Content-Type: application/json');
+                        echo json_encode(['success' => true, 'redirect' => SITE_URL . '/']);
+                        exit;
+                    }
                     redirect(SITE_URL . '/');
                 } catch (\mysqli_sql_exception $e) {
                     error_log('Registration failed: ' . $e->getMessage());
@@ -59,6 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
+    }
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        http_response_code(422);
+        echo json_encode(['success' => false, 'errors' => $errors, 'new_csrf' => generateCSRF()]);
+        exit;
     }
 }
 

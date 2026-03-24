@@ -59,8 +59,8 @@ include __DIR__ . '/includes/header.php';
 
         <div class="flex flex-wrap gap-4 justify-center mb-12">
             <?php if (!isLoggedIn()): ?>
-                <a href="<?= SITE_URL ?>/auth/register.php" class="btn-gold text-lg px-8 py-3">Join the Fleet</a>
-                <a href="<?= SITE_URL ?>/auth/login.php" class="btn-outline text-lg px-8 py-3">Sign In</a>
+                <button type="button" class="btn-gold text-lg px-8 py-3" data-open-modal="register">Join the Fleet</button>
+                <button type="button" class="btn-outline text-lg px-8 py-3" data-open-modal="login">Sign In</button>
             <?php else: ?>
                 <a href="<?= SITE_URL ?>/anchorages/add.php" class="btn-gold text-lg px-8 py-3">Add Anchorage</a>
                 <a href="<?= SITE_URL ?>/sightings/report.php" class="btn-outline text-lg px-8 py-3">Report Sighting</a>
