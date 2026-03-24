@@ -28,7 +28,7 @@ $siteUrl = defined('SITE_URL') ? SITE_URL : '/';
         }
     </script>
 </head>
-<body class="bg-[#0a1628] text-white min-h-screen flex items-center justify-center">
+<body class="text-white min-h-screen flex items-center justify-center" style="background:linear-gradient(175deg,#1a85c8 0%,#1070b0 28%,#0a58a0 58%,#074880 100%);background-attachment:fixed;">
     <div class="text-center px-4">
         <svg class="w-20 h-20 text-[#c9a227] mx-auto mb-6" viewBox="0 0 40 40" fill="currentColor" aria-hidden="true">
             <path d="M20 2L4 32h32L20 2zm0 6l11 20H9L20 8z"/>
