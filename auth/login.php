@@ -2,7 +2,17 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/db.php';
 
-if (isLoggedIn()) redirect(SITE_URL . '/');
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+    && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+if (isLoggedIn()) {
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'redirect' => SITE_URL . '/']);
+        exit;
+    }
+    redirect(SITE_URL . '/');
+}
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -27,12 +37,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id']  = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['flash_success'] = 'Welcome back, ' . $user['username'] . '!';
+                if ($isAjax) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['success' => true, 'redirect' => SITE_URL . '/']);
+                    exit;
+                }
                 $redirect = $_GET['redirect'] ?? SITE_URL . '/';
                 redirect(filter_var($redirect, FILTER_SANITIZE_URL));
             } else {
                 $error = 'Invalid credentials. Please try again.';
             }
         }
+    }
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => $error, 'new_csrf' => generateCSRF()]);
+        exit;
     }
 }
 

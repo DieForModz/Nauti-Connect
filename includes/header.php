@@ -28,6 +28,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Nauti-Connect – The boater community platform for anchorages, parts, wildlife sightings, and more.">
+    <meta name="site-url" content="<?= htmlspecialchars(SITE_URL, ENT_QUOTES, 'UTF-8') ?>">
     <title><?= isset($pageTitle) ? sanitize($pageTitle) . ' | ' : '' ?>Nauti-Connect</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -50,7 +51,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
     </script>
 </head>
-<body class="bg-[#0a1628] text-white min-h-screen">
+<body class="text-white min-h-screen">
+
+<!-- Full-page ocean canvas — sits behind all page content -->
+<canvas id="nc-ocean-bg" aria-hidden="true"></canvas>
 
 <!-- Navigation -->
 <nav class="bg-[#0a1628]/95 backdrop-blur border-b border-[#c9a227]/20 sticky top-0 z-50">
@@ -105,8 +109,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     </a>
                     <a href="<?= SITE_URL ?>/auth/logout.php" class="btn-gold text-sm px-3 py-1.5">Logout</a>
                 <?php else: ?>
-                    <a href="<?= SITE_URL ?>/auth/login.php" class="nav-link">Login</a>
-                    <a href="<?= SITE_URL ?>/auth/register.php" class="btn-gold text-sm px-4 py-2">Join</a>
+                    <button type="button" class="nav-link" data-open-modal="login">Login</button>
+                    <button type="button" class="btn-gold text-sm px-4 py-2" data-open-modal="register">Join</button>
                 <?php endif; ?>
             </div>
 
@@ -139,12 +143,121 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <a href="<?= SITE_URL ?>/profile/" class="mobile-nav-link">Profile</a>
                 <a href="<?= SITE_URL ?>/auth/logout.php" class="mobile-nav-link text-red-400">Logout</a>
             <?php else: ?>
-                <a href="<?= SITE_URL ?>/auth/login.php" class="mobile-nav-link">Login</a>
-                <a href="<?= SITE_URL ?>/auth/register.php" class="mobile-nav-link text-[#c9a227] font-bold">Join Free</a>
+                <button type="button" class="mobile-nav-link" data-open-modal="login">Login</button>
+                <button type="button" class="mobile-nav-link text-[#c9a227] font-bold" data-open-modal="register">Join Free</button>
             <?php endif; ?>
         </div>
     </div>
 </nav>
+
+<!-- ============================================================
+     Auth Modal — Login / Register
+     ============================================================ -->
+<?php if (!isLoggedIn()): ?>
+<div id="auth-modal" class="auth-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+    <div class="auth-modal-box" id="auth-modal-box">
+        <!-- Close -->
+        <button class="auth-modal-close" id="auth-modal-close" aria-label="Close dialog">&times;</button>
+
+        <!-- Logo / title -->
+        <div class="text-center mb-4">
+            <svg width="40" height="40" class="text-[#c9a227] mx-auto mb-2" style="color:#c9a227;display:block;margin:0 auto 0.5rem;" viewBox="0 0 40 40" fill="currentColor" aria-hidden="true">
+                <path d="M20 2L4 32h32L20 2zm0 6l11 20H9L20 8z"/>
+                <rect x="10" y="34" width="20" height="3" rx="1.5"/>
+            </svg>
+            <p id="auth-modal-title" class="text-lg font-bold text-white">Nauti-Connect</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="auth-tab-login" data-tab="login">Sign In</button>
+            <button class="auth-tab" id="auth-tab-register" data-tab="register">Join the Fleet</button>
+        </div>
+
+        <!-- Error area -->
+        <div id="auth-modal-error" class="hidden bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm" role="alert"></div>
+
+        <!-- ── Login panel ── -->
+        <div id="auth-panel-login" class="auth-panel">
+            <form id="modal-login-form" novalidate>
+                <input type="hidden" name="csrf_token" value="<?= sanitize($csrf) ?>">
+                <div class="form-group mb-3">
+                    <label for="modal-identifier" class="form-label">Email or Username</label>
+                    <input type="text" id="modal-identifier" name="identifier" required
+                           class="form-input" placeholder="captain@sea.com" autocomplete="username">
+                </div>
+                <div class="form-group mb-4">
+                    <label for="modal-password" class="form-label">Password</label>
+                    <input type="password" id="modal-password" name="password" required
+                           class="form-input" placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <button type="submit" id="modal-login-btn" class="btn-gold w-full py-3 text-base">
+                    Set Sail →
+                </button>
+            </form>
+            <p class="text-center text-gray-400 mt-4 text-sm">
+                Don't have an account?
+                <button type="button" class="text-[#c9a227] hover:text-[#e8c044] font-semibold" data-switch-tab="register">Join the fleet</button>
+            </p>
+        </div>
+
+        <!-- ── Register panel ── -->
+        <div id="auth-panel-register" class="auth-panel hidden">
+            <form id="modal-register-form" novalidate>
+                <input type="hidden" name="csrf_token" value="<?= sanitize($csrf) ?>">
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="form-group">
+                        <label for="modal-username" class="form-label">Username *</label>
+                        <input type="text" id="modal-username" name="username" required
+                               class="form-input" placeholder="sea_captain"
+                               pattern="[a-zA-Z0-9_]+" minlength="3" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-email" class="form-label">Email *</label>
+                        <input type="email" id="modal-email" name="email" required
+                               class="form-input" placeholder="captain@sea.com">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="form-group">
+                        <label for="modal-reg-password" class="form-label">Password *</label>
+                        <input type="password" id="modal-reg-password" name="password" required
+                               class="form-input" placeholder="Min 8 chars" minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-confirm-password" class="form-label">Confirm *</label>
+                        <input type="password" id="modal-confirm-password" name="confirm_password" required
+                               class="form-input" placeholder="Repeat password">
+                    </div>
+                </div>
+                <div class="form-group mb-4">
+                    <label for="modal-boat-type" class="form-label">Boat Type</label>
+                    <select id="modal-boat-type" name="boat_type" class="form-input">
+                        <option value="">Select vessel type…</option>
+                        <option value="Sailboat">Sailboat</option>
+                        <option value="Motorboat">Motorboat</option>
+                        <option value="Catamaran">Catamaran</option>
+                        <option value="Trimaran">Trimaran</option>
+                        <option value="Trawler">Trawler</option>
+                        <option value="Center Console">Center Console</option>
+                        <option value="Kayak/Canoe">Kayak/Canoe</option>
+                        <option value="Inflatable/RIB">Inflatable/RIB</option>
+                        <option value="Houseboat">Houseboat</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <button type="submit" id="modal-register-btn" class="btn-gold w-full py-3 text-base">
+                    Join the Fleet →
+                </button>
+            </form>
+            <p class="text-center text-gray-400 mt-4 text-sm">
+                Already a member?
+                <button type="button" class="text-[#c9a227] hover:text-[#e8c044] font-semibold" data-switch-tab="login">Sign in</button>
+            </p>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Flash messages -->
 <?php if (!empty($_SESSION['flash_success'])): ?>
